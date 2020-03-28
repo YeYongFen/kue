@@ -1,3 +1,4 @@
+import { observe } from '../observer/index.js';
 
 export function initState (vm) {
   const opt = vm.$options;
@@ -8,5 +9,5 @@ export function initState (vm) {
 }
 
 function initData (data) {
-
+  observe(data);
 }

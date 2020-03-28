@@ -8,6 +8,8 @@ module.exports = {
       "no-var": 1,
       "eqeqeq":0,
       "camelcase":0,
+      "no-new-func":0,
+      "no-cond-assign":0,
       "comma-dangle": ["error", {
           "arrays": "never",
           "objects": "always",

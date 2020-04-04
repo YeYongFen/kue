@@ -28,7 +28,7 @@ export default class Watcher {
   }
 
   addDep (dep) {
-    dep.addWatcher(this);
+    dep.addSub(dep);
     this.deps.push(dep);
   }
 

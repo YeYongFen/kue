@@ -5,6 +5,9 @@ export default function parseText (text) {
   if (!tagRE.test(text)) {
     return;
   }
+
+  text = text.trim();
+
   const tokens = [];
   let lastIndex = tagRE.lastIndex = 0;
   let match, index;
@@ -18,7 +21,7 @@ export default function parseText (text) {
     // tag token
     const exp = match[1].trim();
     // token.push('_s(price)') , _s 在 core/instance/render.js 中定义
-    tokens.push(`_s(this.data.${exp})`);
+    tokens.push(`_s(_data.${exp})`);
     lastIndex = index + match[0].length;
   }
   if (lastIndex < text.length) {

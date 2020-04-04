@@ -24,6 +24,7 @@ function genElement (node) {
     }
   } else if (node.type === 2) { // 如果node是文字
     tempStr = node.expression ? node.expression : `'${node.text}'`;
+    tempStr = tempStr.replace(/\n|\r/g, '');
   }
   return tempStr;
 }

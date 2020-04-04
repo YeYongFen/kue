@@ -10,6 +10,8 @@ module.exports = {
       "camelcase":0,
       "no-new-func":0,
       "no-cond-assign":0,
+      "no-useless-escape":0,
+      "no-prototype-builtins":0,
       "comma-dangle": ["error", {
           "arrays": "never",
           "objects": "always",

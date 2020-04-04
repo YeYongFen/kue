@@ -41,12 +41,16 @@ export function initRender (vm) {
     }
 
     node = deepCopy({
-      nodeName: nodeName,
+      tag: nodeName,
       attributes: attributes || {},
       children: children,
       key: attributes && attributes.key,
     }, node);
     return node;
+  };
+
+  vm._s = function (expression) {
+    return expression;
   };
 }
 

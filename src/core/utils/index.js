@@ -1,6 +1,5 @@
 
 export function getOuterHTML (el) {
-  el = query(el);
   if (el.outerHTML) {
     return el.outerHTML;
   } else {
@@ -33,3 +32,7 @@ export function deepCopy (out) {
 
   return JSON.parse(str);
 };
+
+export function isDef (v) {
+  return v !== undefined && v !== null;
+}

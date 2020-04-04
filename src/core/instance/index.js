@@ -1,11 +1,12 @@
 
 import { initState } from './state';
-import { getOuterHTML } from '../utils/index';
+import { getOuterHTML, query } from '../utils/index';
 import { createCompilerCreator } from '../../compiler/index';
 import { initRender, renderMixin } from './render';
 
 import { lifecycleMixin } from './lifecycle';
 import { patchInit } from './patch';
+import Watcher from '../observer/Watcher';
 
 export default function Kue (options) {
   this._init(options);
@@ -28,10 +29,13 @@ renderMixin(Kue);
 
 Kue.prototype.$mount = function () {
   const options = this.$options;
-  const template = getOuterHTML(options.el);
+
+  this.$el = query(options.el);
+
+  const template = getOuterHTML(this.$el);
   const vm = this;
 
-  this.$el = template;
+  // this.$el = template;
 
   const render = createCompilerCreator(template);
   options.render = render;
@@ -39,6 +43,8 @@ Kue.prototype.$mount = function () {
   const updateComponent = () => {
     vm._update(vm._render());
   };
+
+  new Watcher(vm, updateComponent, () => {});
 }
 
 ;

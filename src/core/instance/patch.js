@@ -1,133 +1,23 @@
-function createElement (node, isSvg) {
-  const _mue = this;
-  const element =
-            typeof node === 'string' || typeof node === 'number'
-              ? document.createTextNode(node)
-              : (isSvg = isSvg || node.nodeName === 'svg')
-                ? document.createElementNS(
-                  'http://www.w3.org/2000/svg',
-                  node.nodeName
-                )
-                : document.createElement(node.nodeName);
+import { isDef } from '../utils/index';
+import * as nodeOps from '../utils/node-ops';
+import VNode from '../vdom/vnode'; ;
 
-  // 嵌套创建
-  if (node.children instanceof Array) {
-    for (let i = 0; i < node.children.length; i++) {
-      element.appendChild(
-        this.createElement(node.children[i])
-      );
-    }
+function patch (oldVnode, vnode) {
+  const isRealElement = isDef(oldVnode.nodeType);
+
+  if (isRealElement) {
+    oldVnode = emptyNodeAt(oldVnode);
   }
 
-  // 如果是input标签
-  if (node.nodeName === 'input') {
-    element.value = node.value;
-    element.addEventListener('input', function (e) {
-      const expression = node.attributes['m-model'];
-      const val = e.target.value;
-      const str = `this.data.${expression}='${val}'`;
-      (new Function(str)).call(_mue);
-    });
-  }
+  const oldElm = oldVnode.elm;
+  const parentElm = nodeOps.parentNode(oldElm);
 
-  return element;
+  createElm(vnode, parentElm);
 };
 
-function patch (parent, element, oldNode, node, isSvg) {
-  // 同一个node树，什么也不处理
-  if (node === oldNode) {
-  } else if (oldNode == null || oldNode.nodeName !== node.nodeName) { // 第一次patch，直接创建DOM树
-    const newElement = this.createElement(node, isSvg);
-    parent.insertBefore(newElement, element);
-
-    if (oldNode != null) {
-      removeElement(parent, element, oldNode);
-    }
-
-    element = newElement;
-  } else if (oldNode.nodeName == null) { // 只有文字
-    element.nodeValue = node;
-  } else { // 新旧DOM树有所不同，进行diff修改更新DOM
-    const oldKeyed = {};
-    const newKeyed = {};
-    const oldElements = [];
-    const oldChildren = oldNode.children;
-    const children = node.children;
-
-    for (let i = 0; i < oldChildren.length; i++) {
-      oldElements[i] = element.childNodes[i];
-
-      const oldKey = getKey(oldChildren[i]);
-      if (oldKey != null) {
-        oldKeyed[oldKey] = [oldElements[i], oldChildren[i]];
-      }
-    }
-
-    let i = 0;
-    let k = 0;
-
-    while (children && k < children.length) {
-      const oldKey = getKey(oldChildren[i]);
-      const newKey = getKey((children[k]));
-
-      // 新node树中还存在的旧节点保留
-      if (newKeyed[oldKey]) {
-        i++;
-        continue;
-      }
-
-      if (newKey != null && newKey === getKey(oldChildren[i + 1])) {
-        if (oldKey == null) {
-          removeElement(element, oldElements[i], oldChildren[i]);
-        }
-        i++;
-        continue;
-      }
-
-      if (newKey == null) {
-        if (oldKey == null) {
-          patch(element, oldElements[i], oldChildren[i], children[k], isSvg);
-          k++;
-        }
-        i++;
-      } else {
-        const keyedNode = oldKeyed[newKey] || [];
-
-        if (oldKey === newKey) {
-          patch(element, keyedNode[0], keyedNode[1], children[k], isSvg);
-          i++;
-        } else if (keyedNode[0]) {
-          patch(
-            element,
-            element.insertBefore(keyedNode[0], oldElements[i]),
-            keyedNode[1],
-            children[k],
-            isSvg
-          );
-        } else {
-          patch(element, oldElements[i], null, children[k], isSvg);
-        }
-
-        newKeyed[newKey] = children[k];
-        k++;
-      }
-    }
-
-    while (i < oldChildren.length) {
-      if (getKey(oldChildren[i]) == null) {
-        removeElement(element, oldElements[i], oldChildren[i]);
-      }
-      i++;
-    }
-
-    for (const i in oldKeyed) {
-      if (!newKeyed[i]) {
-        removeElement(element, oldKeyed[i][0], oldKeyed[i][1]);
-      }
-    }
-  }
-  return element;
-};
+function emptyNodeAt (elm) {
+  return new VNode(nodeOps.tagName(elm).toLowerCase(), {}, elm);
+}
 
 export function patchInit (Kue) {
   // Kue.prototype.
@@ -135,33 +25,48 @@ export function patchInit (Kue) {
   Kue.prototype.__patch__ = patch;
 }
 
-function getKey (node) {
-  return node ? node.key : null;
-}
+function createElm (
+  vnode,
+  parentElm,
 
-function removeChildren (element, node) {
-  const attributes = node.attributes;
-  if (attributes) {
-    for (let i = 0; i < node.children.length; i++) {
-      removeChildren(element.childNodes[i], node.children[i]);
-    }
+) {
+  const data = vnode.data;
+  const children = vnode.children;
+  const tag = vnode.tag;
+  if (isDef(tag)) {
+    vnode.elm = nodeOps.createElement(tag, vnode);
 
-    if (attributes.ondestroy) {
-      attributes.ondestroy(element);
-    }
-  }
-  return element;
-}
+    createChildren(vnode, children);
 
-function removeElement (parent, element, node) {
-  function done () {
-    parent.removeChild(removeChildren(element, node));
-  }
-
-  const cb = node.attributes && node.attributes.onremove;
-  if (cb) {
-    cb(element, done);
+    insert(parentElm, vnode.elm);
   } else {
-    done();
+    vnode.elm = nodeOps.createTextNode(vnode.text);
+    insert(parentElm, vnode.elm);
   }
+}
+
+function insert (parent, elm) {
+  if (isDef(parent)) {
+    nodeOps.appendChild(parent, elm);
+  }
+}
+
+function createChildren (vnode, children, insertedVnodeQueue) {
+  if (Array.isArray(children)) {
+    for (let i = 0; i < children.length; ++i) {
+      createElm(children[i], insertedVnodeQueue, vnode.elm, null, true, children, i);
+    }
+  } else if (isPrimitive(vnode.text)) {
+    nodeOps.appendChild(vnode.elm, nodeOps.createTextNode(String(vnode.text)));
+  }
+}
+
+export function isPrimitive (value) {
+  return (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    // $flow-disable-line
+    typeof value === 'symbol' ||
+    typeof value === 'boolean'
+  );
 }
